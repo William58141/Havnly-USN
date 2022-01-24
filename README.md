@@ -1,15 +1,14 @@
 # Havnly-USN
 
-This is our bachelor thesis for the course IT og informasjonssystemer.
+This is our bachelor thesis for the IT og informasjonssystemer.  
+This repository contains all source code written only by the [group member](#group-members).
 
-This repository contains the source code for the Neonomics api-wrapper.
+#### Technology used
 
-#### Tech stack used
+- PHP - *langauge*
+- Laravel - *framework*
 
-- PHP
-- Laravel
-
-#### Group memebers
+#### Group members
 
 - Abdullahi Bashir Botan
 - Oskar Brekke Fuglem
