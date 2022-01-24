@@ -5,7 +5,7 @@ This repository contains all source code written only by the [group member](#gro
 
 The project is based on an application called *Havnly*.
 This application needed a solution for managing payment with an existing solution called *Neonomics*.
-Our job has been to create a wrapper around *Neonomics-API*, as well as ...
+Our job has been to create a wrapper around *Neonomics-API*, as well as a potential frontend depending on time.
 
 #### Technology used
 
