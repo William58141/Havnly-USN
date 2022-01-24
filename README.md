@@ -3,6 +3,10 @@
 This is our bachelor thesis for the IT og informasjonssystemer.  
 This repository contains all source code written only by the [group member](#group-members).
 
+The project is based on an application called *Havnly*.
+This application needed a solution for managing payment with an existing solution called *Neonomics*.
+Our job has been to create a wrapper around *Neonomics-API*, as well as ...
+
 #### Technology used
 
 - PHP - *langauge*
