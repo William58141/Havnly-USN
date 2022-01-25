@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,6 +13,23 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
+
+// Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'index']);
+
+Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
+Route::get('/banks/{id}', [App\Http\Controllers\Api\BankController::class, 'show']);
+
+// Route::get('/accounts', [App\Http\Controllers\Api\AccountController::class, 'index']);
+
+
+// catch all 404
+Route::fallback(function() {
+    return response()->json([
+        'ok' => false,
+        'error' => 404,
+        'message' => 'Not found',
+    ], 404);
 });
