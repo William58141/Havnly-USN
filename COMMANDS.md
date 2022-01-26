@@ -5,3 +5,6 @@ php artisan
 php artisan make:controller PATH/NAME
 php artisan make:model PATH/NAME
 php artisan make:migrate PATH/NAME
+
+<!-- install application dependencies -->
+composer install
