@@ -16,13 +16,9 @@ class Request
 
     public function send(string $token, string $method, string $uri, array $data = [])
     {
-        if (!array_key_exists('headers', $data)) {
-            $data['headers'] = [
-                'authorization' => "Bearer {$token}",
-                'x-device-id' => 'neonomics',
-                'accept' => 'application/json',
-            ];
-        }
+        // add needed headers
+        $data['headers']['authorization'] = "Bearer {$token}";
+        $data['headers']['accept'] = 'application/json';
 
         try {
             $response = $this->http->request($method, $uri, $data);
