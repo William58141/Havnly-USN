@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Support\Client;
+use App\Support\Neonomics;
 use App\Support\Request;
 use GuzzleHttp\Client as GuzzleHttpClient;
 use Illuminate\Support\ServiceProvider;
@@ -18,10 +18,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind('neonomics', function () {
             $guzzle = new GuzzleHttpClient([
-                'base_uri' => env('NEONOMICS_BASE_URL') . '/' . env('NEONOMICS_PRODUCT') . '/' . env('NEONOMICS_API_VERSION') . '/'
+                'base_uri' => env('NEONOMICS_BASE_URL') . '/' . env('NEONOMICS_PRODUCT') . '/' . env('NEONOMICS_API_VERSION') . '/',
             ]);
             $request = new Request($guzzle);
-            return new Client($request);
+            return new Neonomics($request);
         });
     }
 

@@ -8,11 +8,6 @@ use Illuminate\Http\Request;
 
 class BankController extends Controller
 {
-    public function __construct()
-    {
-        //
-    }
-
     // get list of all available banks
     // or check for query filter
     public function index(Request $request)

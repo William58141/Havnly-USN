@@ -7,21 +7,30 @@ use GuzzleHttp\Exception\GuzzleException;
 
 class Request
 {
-    private $http;
+    private $client;
 
-    public function __construct(Client $http)
+    public function __construct(Client $client)
     {
-        $this->http = $http;
+        $this->client = $client;
     }
 
-    public function send(string $token, string $method, string $uri, array $data = [])
+    /**
+     * Send a new http request.
+     *
+     * @param string $token
+     * @param string $method
+     * @param string $uri
+     * @param array $data
+     * @return JsonResponse
+     */
+    public function request(string $token, string $method, string $uri, array $data = [])
     {
         // add needed headers
         $data['headers']['authorization'] = "Bearer {$token}";
         $data['headers']['accept'] = 'application/json';
 
         try {
-            $response = $this->http->request($method, $uri, $data);
+            $response = $this->client->request($method, $uri, $data);
             $result = json_decode($response->getBody());
             return response()->json([
                 'ok' => true,
