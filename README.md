@@ -19,6 +19,6 @@ Our job has been to create a wrapper around *Neonomics-API*, as well as a potent
 - Abdullahi Bashir Botan
 - Oskar Brekke Fuglem
 - Leander Gangsø
-- William Fosmark Hauglandhei
+- William Fosmark Haugland heisannn
 - Bendik Borge Øttl
 
