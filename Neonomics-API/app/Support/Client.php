@@ -13,14 +13,19 @@ class Client
 
     public function getBanks(string $token)
     {
-        // return $this->request->test($value);
-        return 'get banks';
+        $response = $this->request->send($token, 'get', 'banks');
+        return $response;
     }
 
     public function getBankByID(string $token, string $id)
     {
-        return 'bank by ID';
+        $response = $this->request->send($token, 'get', "banks/{$id}");
+        return $response;
     }
 
-    // public function getBanks
+    public function getBanksByFilter(string $token, string $filter)
+    {
+        $response = $this->request->send($token, 'get', "banks?{$filter}");
+        return $response;
+    }
 }
