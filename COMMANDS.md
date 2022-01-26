@@ -1,7 +1,11 @@
 <!-- get list of commands -->
 php artisan
 
-<!-- create new files of TYPE -->
+<!-- migration -->
+php artisan migrate
+php artisan migrate:fresh
+
+<!-- create new files -->
 php artisan make:controller PATH/NAME
 php artisan make:model PATH/NAME
 php artisan make:migrate PATH/NAME
