@@ -1,3 +1,6 @@
+<!-- run the application -->
+php artisan serve
+
 <!-- get list of commands -->
 php artisan
 
