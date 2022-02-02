@@ -7,7 +7,7 @@ The project is based on an application called *Havnly*.
 This application needed a solution for managing payment with an existing solution called *Neonomics*.
 Our job has been to create a wrapper around *Neonomics-API*, as well as a potential frontend depending on time.
 
-[Visit api here](https://umurum.com/api/help).
+[Visit api here](https://umurum.com/api/v1/help).
 
 #### Technology used
 
