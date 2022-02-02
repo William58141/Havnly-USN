@@ -2,29 +2,58 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\Api\JsonException;
 use App\Models\User;
 use App\Http\Controllers\Controller;
+use App\Support\Facades\Neonomics;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    // public function register(Request $request)
-    // {
-    //     $fields = $request->validate([
-    //         'clientId' => 'required|string',
-    //         'clientSecret' => 'required|string',
-    //     ]);
+    public function auth(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'client_id' => 'required|string',
+            'client_secret' => 'required|string',
+            'redirect_url' => 'required|string',
+        ]);
+        $user = User::where('client_id', $request->client_id)->first();
 
-    //     $user = User::create([
-    //         'clientId' => $fields['clientId'],
-    //         'clientSecret' => $fields['clientSecret'],
-    //     ]);
+        if (!$user) {
+            $user = $this->createUser($request);
+        } else {
+            $this->authenticate($user, $request);
+        }
 
-    //     $token = $user->createToken('neonomics');
+        $user->tokens()->delete();
+        $authToken = $user->createToken($user->name)->plainTextToken;
 
-    //     return response()->json([
-    //         'ok' => true,
-    //         'token' => $token->plainTextToken,
-    //     ], 201);
-    // }
+        return response()->json([
+            'ok' => true,
+            'access_token' => $authToken,
+        ], 200);
+    }
+
+    private function createUser(Request $request)
+    {
+        $tokens = Neonomics::getTokens($request->client_id, $request->client_secret);
+        $user = User::create([
+            'name' => $request->name,
+            'client_id' => $request->client_id,
+            'client_secret' => $request->client_secret,
+            'redirect_url' => $request->redirect_url,
+            'access_token' => $tokens->access_token,
+            'refresh_token' => $tokens->refresh_token,
+        ]);
+
+        return $user;
+    }
+
+    private function authenticate(User $user, Request $request)
+    {
+        if ($user->client_secret !== $request->client_secret) {
+            throw new JsonException(401, 'Invalid client_id or client_secret');
+        }
+    }
 }

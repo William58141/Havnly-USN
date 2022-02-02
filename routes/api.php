@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,23 +13,17 @@ use Illuminate\Support\Facades\Route;
 |
  */
 
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
+Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'auth']);
 
-// Route::group(['middleware' => ['auth:sanctum']], function () {
-//     Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
-// });
+Route::group(['middleware' => ['auth:sanctum']], function () {
+    Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
+    Route::get('/banks/{id}', [App\Http\Controllers\Api\BankController::class, 'show']);
 
-// Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'register']);
-
-Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
-Route::get('/banks/{id}', [App\Http\Controllers\Api\BankController::class, 'show']);
-
-Route::get('/accounts', [App\Http\Controllers\Api\AccountController::class, 'index']);
-Route::get('/accounts/{id}', [App\Http\Controllers\Api\AccountController::class, 'show']);
-Route::get('/accounts/{id}/balances', [App\Http\Controllers\Api\AccountController::class, 'balances']);
-Route::get('/accounts/{id}/transactions', [App\Http\Controllers\Api\AccountController::class, 'transactions']);
+    // Route::get('/accounts', [App\Http\Controllers\Api\AccountController::class, 'index']);
+    // Route::get('/accounts/{id}', [App\Http\Controllers\Api\AccountController::class, 'show']);
+    // Route::get('/accounts/{id}/balances', [App\Http\Controllers\Api\AccountController::class, 'balances']);
+    // Route::get('/accounts/{id}/transactions', [App\Http\Controllers\Api\AccountController::class, 'transactions']);
+});
 
 Route::get('/help', [App\Http\Controllers\Api\HelpController::class, 'index']);
 

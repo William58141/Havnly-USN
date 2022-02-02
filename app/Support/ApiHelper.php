@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Exceptions\Api\JsonException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -22,16 +23,16 @@ class ApiHelper
      * @param string $method
      * @param string $uri
      * @param array $data
-     * @return array [$status, $body]
+     * @return object
      */
     public function request(string $token, string $method, string $uri, array $data = [])
     {
-        $data['headers']['authorization'] = "Bearer {$token}";
+        if ($token) $data['headers']['authorization'] = "Bearer {$token}";
         $data['headers']['accept'] = 'application/json';
 
         try {
             $response = $this->httpClient->request($method, $uri, $data);
-            return $this->response($response->getStatusCode(), json_decode($response->getBody()));
+            return json_decode($response->getBody());
         } catch (RequestException $e) {
             $errorCode = $e->getResponse()->getStatusCode();
             if ($errorCode == 510) {
@@ -41,9 +42,10 @@ class ApiHelper
             } else if ($errorCode == 530) {
                 return $this->bankError($e);
             }
-            return $this->errorResponse(502, 'Bad Gateway.');
+
+            throw new JsonException(502);
         } catch (GuzzleException $e) {
-            return $this->errorResponse(500, 'Internal Server Error.');
+            throw new JsonException(500);
         }
     }
 
@@ -53,74 +55,64 @@ class ApiHelper
 
     private function clientError($e)
     {
-        if ($e->hasResponse()){
-            $body = json_decode($e->getResponse()->getBody());
-            $errorCode = property_exists($body, 'errorCode') ? $body->errorCode : null;
-            $message = property_exists($body, 'message') ? $body->message : null;
+        if ($e->hasResponse()) {
+            // [$errorCode, $message] = $this->getErrorData($e);
+            $body = $this->getErrorBody($e);
 
-            if ($errorCode < 2000) {
-                // bad request
-                return $this->errorResponse(400, 'Bad Request.', $message);
-            } else {
-                // auth
-                return $this->errorResponse(401, 'Unauthorized.', $message);
+            // consent
+            if ($body->errorCode === "1426") {
+                // $this->initConsent($body->links);
+                throw new JsonException(400, 'consent neede');
             }
+            // authorize payment
+            if ($body->errorCode === "1428") {
+                //
+            }
+            // bad request
+            if ($body->errorCode < 2000) {
+                throw new JsonException(400, $body->message);
+            }
+            // forbidden
+            if ($body->errorCode === "2004") {
+                throw new JsonException(403, $body->message);
+            }
+            // invalid client id/secret
+            if ($body->errorCode === "2005") {
+                throw new JsonException(401, $body->message);
+            }
+            // $this->reAuthenticate();
+            throw new JsonException(500, $e);
         }
         // unknown
-        return $this->errorResponse(410, 'Gone.', 'We do not know what happened.');
+        throw new JsonException(410, 'We do not know what happened');
     }
 
     private function neonomicsError($e)
     {
-        return 'neonomics error';
+        throw new JsonException(500, 'Error from Neonomics');
     }
 
     private function bankError($e)
     {
-        return 'bank error';
+        throw new JsonException(500, 'Error from bank');
     }
 
-    // ----------- //
-    // Request fix //
-    // ----------- //
-
-    private function authenticate()
+    /**
+     * Get status and message from response
+     *
+     * @param RequestException $e
+     * @return object
+     */
+    private function getErrorBody($e)
     {
-        // get auth url
-    }
+        $body = json_decode($e->getResponse()->getBody());
 
-    private function consent()
-    {
-        // get consent url
-    }
+        if (!is_object($body)) throw new JsonException(400);
 
-    // --------------- //
-    // Response format //
-    // --------------- //
+        // $errorCode = property_exists($body, 'errorCode') ? $body->errorCode : null;
+        // $message = property_exists($body, 'message') ? $body->message : null;
 
-    private function response(int $status, $body)
-    {
-        return [
-            'ok' => true,
-            'status' => $status,
-            'body' => $body,
-        ];
-    }
-
-    private function errorResponse(int $status, string $description, string $message = null)
-    {
-        $data = [
-            'ok' => false,
-            'error' => $status,
-            'description' => $description,
-        ];
-        if ($message) {
-            $data['message'] = $message;
-        }
-        return [
-            'ok' => false,
-            'status' => $status,
-            'body' => $data,
-        ];
+        // return [$errorCode, $message];
+        return $body;
     }
 }
