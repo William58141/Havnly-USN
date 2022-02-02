@@ -8,23 +8,23 @@ use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $fields = $request->validate([
-            'clientId' => 'required|string',
-            'clientSecret' => 'required|string',
-        ]);
+    // public function register(Request $request)
+    // {
+    //     $fields = $request->validate([
+    //         'clientId' => 'required|string',
+    //         'clientSecret' => 'required|string',
+    //     ]);
 
-        $user = User::create([
-            'clientId' => $fields['clientId'],
-            'clientSecret' => $fields['clientSecret'],
-        ]);
+    //     $user = User::create([
+    //         'clientId' => $fields['clientId'],
+    //         'clientSecret' => $fields['clientSecret'],
+    //     ]);
 
-        $token = $user->createToken('neonomics');
+    //     $token = $user->createToken('neonomics');
 
-        return response()->json([
-            'ok' => true,
-            'token' => $token->plainTextToken,
-        ], 201);
-    }
+    //     return response()->json([
+    //         'ok' => true,
+    //         'token' => $token->plainTextToken,
+    //     ], 201);
+    // }
 }

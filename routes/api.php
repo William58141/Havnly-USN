@@ -18,13 +18,13 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
-Route::group(['middleware' => ['auth:sanctum']], function () {
-    Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
-});
+// Route::group(['middleware' => ['auth:sanctum']], function () {
+//     Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
+// });
 
-Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'register']);
+// Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'register']);
 
-// Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
+Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
 Route::get('/banks/{id}', [App\Http\Controllers\Api\BankController::class, 'show']);
 
 Route::get('/accounts', [App\Http\Controllers\Api\AccountController::class, 'index']);
@@ -38,6 +38,6 @@ Route::fallback(function () {
     return response()->json([
         'ok' => false,
         'error' => 404,
-        'message' => 'Not found',
+        'description' => 'Not found',
     ], 404);
 });
