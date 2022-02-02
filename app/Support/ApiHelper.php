@@ -5,7 +5,6 @@ namespace App\Support;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\GuzzleException;
-use SebastianBergmann\Environment\Console;
 
 class ApiHelper
 {
@@ -67,6 +66,8 @@ class ApiHelper
                 return $this->errorResponse(401, 'Unauthorized.', $message);
             }
         }
+        // unknown
+        return $this->errorResponse(410, 'Gone.', 'We do not know what happened.');
     }
 
     private function neonomicsError($e)
@@ -78,23 +79,6 @@ class ApiHelper
     {
         return 'bank error';
     }
-
-    // private fnction errorHandler($e)
-    // {
-    //     if ($e->hasResponse()) {
-    //         $res = $e->getResponse();
-    //         return response()->json([
-    //             'ok' => false,
-    //             'error' => $res->getStatusCode(),
-    //             'result' => $res->getBody(),
-    //         ], $res->getStatusCode());
-    //     }
-    //     return response()->json([
-    //         'ok' => false,
-    //         'error' => 502,
-    //         'description' => 'Bad Gateway',
-    //     ], 502);
-    // }
 
     // ----------- //
     // Request fix //
