@@ -17,7 +17,7 @@ class Client
     // Auth //
     //------//
 
-    public function getTokens(string $clientId, $clientSecret)
+    public function getTokens(string $clientId, string $clientSecret)
     {
         $data = [
             'form_params' => [
@@ -29,23 +29,20 @@ class Client
         ];
         $res = $this->apiHelper->request('', 'POST', env('NEONOMICS_AUTH_URL'), $data);
         return $res;
-        // return [
-        //     'access_token' => $res->access_token,
-        //     'refresh_token' => $res->refresh_token,
-        // ];
     }
 
-    private function refreshTokens()
+    public function refreshTokens(string $clientId, string $clientSecret, string $refreshToken)
     {
         $data = [
             'form_params' => [
                 'grant_type' => 'refresh_token',
-                'refresh_token' => 'eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIwYTAzNjlhNy0yMTg3LTQ3OWYtOTU4NS02Y2QzYTczZDUxOWYifQ.eyJleHAiOjE2NDYzMTUxNjYsImlhdCI6MTY0MzcyMzE2NiwianRpIjoiODhhYmQwYjktNjA1OS00MGYyLWI2NmQtODZmZDE1YjZhZjRmIiwiaXNzIjoiaHR0cHM6Ly9zYW5kYm94Lm5lb25vbWljcy5pby9hdXRoL3JlYWxtcy9zYW5kYm94IiwiYXVkIjoiaHR0cHM6Ly9zYW5kYm94Lm5lb25vbWljcy5pby9hdXRoL3JlYWxtcy9zYW5kYm94Iiwic3ViIjoiZmQ5MDRiMTctM2Y4Ni00NDFhLTkwODEtNmI0MmVhNDU5NjQ5IiwidHlwIjoiUmVmcmVzaCIsImF6cCI6ImYzOWFjOTVmLWY5YjgtNGNhZC05MjliLTkzMDEzNmE3OWVjNCIsInNlc3Npb25fc3RhdGUiOiIwMjllNTA1ZC01ODkzLTRiMTEtODI5Yy1hMzBmNWRhMjUzNWEiLCJzY29wZSI6Im9wZW5pZCBiYW5xYnJpZGdlX2NsaWVudCJ9.Rh1N1oHlSt0B46pReAKMOwDdfQf8xJPC4DeyrY-PD0g',
-                'client_id' => 'f39ac95f-f9b8-4cad-929b-930136a79ec4',
-                'client_secret' => '5fb748bb-5fe9-430d-a0ec-eb9edcc9c48a',
+                'refresh_token' => $refreshToken,
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
             ]
         ];
-        return 'new access token with refresh token';
+        $res = $this->apiHelper->request('', 'POST', env('NEONOMICS_AUTH_URL'), $data);
+        return $res;
     }
 
     private function initConsent()
