@@ -13,6 +13,14 @@ class Controller extends BaseController
 
     protected function responseJson($data)
     {
-        return response()->json($data['body'], $data['status']);
+        if ($data['ok']) {
+            $response = [
+                'ok' => $data['ok'],
+                'result' => $data['body'],
+            ];
+        } else {
+            $response = $data['body'];
+        }
+        return response()->json($response, $data['status']);
     }
 }

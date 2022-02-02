@@ -40,15 +40,14 @@ class Bank extends Model
 
     public static function jsonDeserialize($json)
     {
-        if (is_array($json['result'])) {
+        if (is_array($json)) {
             $banks = [];
-            foreach ($json['result'] as $bank) {
+            foreach ($json as $bank) {
                 $bank = new Bank($bank->countryCode, $bank->bankingGroupName, $bank->personalIdentificationRequired, $bank->id, $bank->bankDisplayName, $bank->supportedServices, $bank->bic, $bank->bankOfficialName, $bank->status);
                 array_push($banks, $bank);
             }
-            $json['result'] = $banks;
-            return $json;
+            return $banks;
         }
-        return $json;
+        return new Bank($json->countryCode, $json->bankingGroupName, $json->personalIdentificationRequired, $json->id, $json->bankDisplayName, $json->supportedServices, $json->bic, $json->bankOfficialName, $json->status);
     }
 }

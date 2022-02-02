@@ -5,6 +5,7 @@ namespace App\Support;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\GuzzleException;
+use SebastianBergmann\Environment\Console;
 
 class ApiHelper
 {
@@ -31,14 +32,7 @@ class ApiHelper
 
         try {
             $response = $this->httpClient->request($method, $uri, $data);
-            return $this->responseJson($response->getStatusCode(), json_decode($response->getBody()));
-            return [
-                'status' => $response->getStatusCode(),
-                'body' => [
-                    'ok' => true,
-                    'result' => json_decode($response->getBody()),
-                ]
-            ];
+            return $this->response($response->getStatusCode(), json_decode($response->getBody()));
         } catch (RequestException $e) {
             $errorCode = $e->getResponse()->getStatusCode();
             if ($errorCode == 510) {
@@ -48,9 +42,9 @@ class ApiHelper
             } else if ($errorCode == 530) {
                 return $this->bankError($e);
             }
-            return $this->errorResponseJson(502, 'Bad Gateway');
+            return $this->errorResponse(502, 'Bad Gateway.');
         } catch (GuzzleException $e) {
-            return $this->errorResponseJson(500, 'Internal Server Error');
+            return $this->errorResponse(500, 'Internal Server Error.');
         }
     }
 
@@ -60,7 +54,19 @@ class ApiHelper
 
     private function clientError($e)
     {
-        return $this->errorResponseJson(400, 'Bad Request', 'message');
+        if ($e->hasResponse()){
+            $body = json_decode($e->getResponse()->getBody());
+            $errorCode = property_exists($body, 'errorCode') ? $body->errorCode : null;
+            $message = property_exists($body, 'message') ? $body->message : null;
+
+            if ($errorCode < 2000) {
+                // bad request
+                return $this->errorResponse(400, 'Bad Request.', $message);
+            } else {
+                // auth
+                return $this->errorResponse(401, 'Unauthorized.', $message);
+            }
+        }
     }
 
     private function neonomicsError($e)
@@ -108,19 +114,16 @@ class ApiHelper
     // Response format //
     // --------------- //
 
-    private function responseJson(int $status, $body)
+    private function response(int $status, $body)
     {
-        $data = [
-            'ok' => true,
-            'result' => $body,
-        ];
         return [
+            'ok' => true,
             'status' => $status,
-            'body' => $data,
+            'body' => $body,
         ];
     }
 
-    private function errorResponseJson(int $status, string $description, string $message = null)
+    private function errorResponse(int $status, string $description, string $message = null)
     {
         $data = [
             'ok' => false,
@@ -131,6 +134,7 @@ class ApiHelper
             $data['message'] = $message;
         }
         return [
+            'ok' => false,
             'status' => $status,
             'body' => $data,
         ];

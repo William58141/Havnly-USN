@@ -38,7 +38,7 @@ class Client
         }
         $data['headers']['x-device-id'] = 'neonomics';
         $data = $this->apiHelper->request($token, 'GET', $uri, $data);
-        $data['body'] = $data['body']['ok'] ? Bank::jsonDeserialize($data['body']) : $data['body'];
+        $data['body'] = $data['ok'] ? Bank::jsonDeserialize($data['body']) : $data['body'];
         return $data;
     }
 
@@ -52,8 +52,9 @@ class Client
     public function getBankByID(string $token, string $id)
     {
         $data['headers']['x-device-id'] = 'neonomics';
-        $res = $this->httpClient->request($token, 'GET', "banks/{$id}", $data);
-        return Bank::jsonDeserialize($res);
+        $data = $this->apiHelper->request($token, 'GET', "banks/{$id}", $data);
+        $data['body'] = $data['ok'] ? Bank::jsonDeserialize($data['body']) : $data['body'];
+        return $data;
     }
 
     //---------//
