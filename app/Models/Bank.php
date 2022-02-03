@@ -35,6 +35,8 @@ class Bank extends Model
             'countryCode' => $this->countryCode,
             'name' => $this->bankDisplayName,
             'id' => $this->id,
+            'bic' =>$this->bic,
+            'status' =>$this->status,
         ];
     }
 
