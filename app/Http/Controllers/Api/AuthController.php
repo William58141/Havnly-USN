@@ -20,14 +20,13 @@ class AuthController extends Controller
             'encryption_key' => 'required|string',
             'redirect_url' => 'required|string',
         ]);
-        $user = User::where('client_id', $request->client_id)->first();
+        $user = User::where('client_id', $request->client_id)->where('client_secret', $request->client_secret)->first();
 
         if (!$user) {
             $status = 201;
             $user = $this->createUser($request);
         } else {
             $this->authenticate($user, $request);
-            $this->updateUser($user, $request);
         }
 
         $user->tokens()->delete();
@@ -38,6 +37,14 @@ class AuthController extends Controller
 
     private function createUser(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|unique:users,name',
+            'client_id' => 'required|string|unique:users,client_id',
+            'client_secret' => 'required|string',
+            'encryption_key' => 'required|string',
+            'redirect_url' => 'required|string',
+        ]);
+
         $tokens = Neonomics::getNewTokens($request->client_id, $request->client_secret);
         $user = User::create([
             'name' => $request->name,
@@ -54,19 +61,8 @@ class AuthController extends Controller
 
     private function authenticate(User $user, Request $request)
     {
-        if ($user->client_secret !== $request->client_secret || $user->encryption_key !== $request->encryption_key) {
-            throw new JsonException(401, 'Invalid client_id, client_secret or encryption_key');
+        if ($user->name !== $request->name || $user->redirect_url !== $request->redirect_url || $user->encryption_key !== $request->encryption_key) {
+            throw new JsonException(401, 'One or more values was invalid');
         }
-    }
-
-    private function updateUser(User $user, Request $request)
-    {
-        if ($user->name !== $request->name) {
-            $user->name = $request->name;
-        }
-        if ($user->redirect_url !== $request->redirect_url) {
-            $user->redirect_url = $request->redirect_url;
-        }
-        return $user->save();
     }
 }
