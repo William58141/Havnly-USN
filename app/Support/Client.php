@@ -2,7 +2,11 @@
 
 namespace App\Support;
 
+use App\Exceptions\api\ConsentRequiredException;
+use App\Exceptions\Api\JsonException;
+use App\Models\Account;
 use App\Models\Bank;
+use App\Models\Session;
 
 class Client
 {
@@ -45,69 +49,174 @@ class Client
         return $res;
     }
 
-    private function initConsent()
+    // HELPER METHODS
+
+    private function getConsent(string $token, string $url, array $data)
     {
-        return 'init consent';
+        $data['headers']['x-redirect-url'] = auth()->user()->redirect_url;
+        $res = $this->apiHelper->request($token, 'GET', $url, $data);
+        foreach ($res->links as $link) {
+            if ($link->rel === 'consent') {
+                return [
+                    'type' => $link->type,
+                    'href' => $link->href
+                ];
+            }
+        }
+        return $res;
     }
 
-    private function initPaymentAuthorization()
+    private function getPaymentAuthorization()
     {
-        return 'payment auth';
+        return 'payment auth, not done';
     }
 
     //------//
     // Bank //
     //------//
 
-    /**
-     * Get a list of all banks or based on [countryCode, name]
-     *
-     * @param string $token
-     * @param string $params
-     * @return object
-     */
     public function getBanks(string $token, string $params)
     {
         $uri = 'banks';
-        if ($params) {
-            $uri = $uri . '?' . $params;
-        }
+        if ($params) $uri = $uri . '?' . $params;
         $data['headers']['x-device-id'] = 'neonomics';
         $res = $this->apiHelper->request($token, 'GET', $uri, $data);
-        $res = Bank::jsonDeserialize($res);
-        return $res;
+        $banks = Bank::jsonDeserialize($res);
+        return $banks;
     }
 
-    /**
-     * Get bank by id
-     *
-     * @param string $token
-     * @param string $id
-     * @return object
-     */
     public function getBankByID(string $token, string $id)
     {
         $data['headers']['x-device-id'] = 'neonomics';
         $res = $this->apiHelper->request($token, 'GET', "banks/{$id}", $data);
-        $res = Bank::jsonDeserialize($res);
-        return $res;
+        $bank = Bank::jsonDeserialize($res);
+        return $bank;
+    }
+
+    //---------//
+    // Session //
+    //---------//
+
+    private function createSession(string $token, string $userId, string $bankId)
+    {
+        $data = [
+            'headers' => ['x-device-id' => $userId],
+            'json' => ['bankId' => $bankId]
+        ];
+        $res = $this->apiHelper->request($token, 'POST', 'session', $data);
+        $session = Session::create([
+            'user_id' => $userId,
+            'bank_id' => $bankId,
+            'session_id' => $res->sessionId,
+        ]);
+        return $session;
+    }
+
+    private function getOrCreateSession(string $token, string $userId, string $bankId)
+    {
+        $session = Session::where('user_id', $userId)->where('bank_id', $bankId)->first();
+        if (!$session) {
+            $session = $this->createSession($token, $userId, $bankId);
+        }
+        return $session;
     }
 
     //---------//
     // Account //
     //---------//
 
-    // ...
+    public function getAccounts(string $token, string $encryptionKey, string $userId, string $bankId, string $personalNumber)
+    {
+        $url = 'accounts';
+        $res = $this->baseAccountRequest($token, $encryptionKey, $userId, $bankId, $personalNumber, $url);
+        if ($this->isConsent($res)) return $res;
+        $account = Account::jsonDeserialize($res);
+        return $account;
+    }
+
+    public function getAccountByID(string $token, string $encryptionKey, string $userId, string $bankId, string $personalNumber, string $id)
+    {
+        $url = "accounts/{$id}";
+        $res = $this->baseAccountRequest($token, $encryptionKey, $userId, $bankId, $personalNumber, $url);
+        if ($this->isConsent($res)) return $res;
+        $account = Account::jsonDeserialize($res);
+        return $account;
+    }
+
+    public function getAccountBalancesByID(string $token, string $encryptionKey, string $userId, string $bankId, string $personalNumber, string $id)
+    {
+        $url = "accounts/{$id}/balances";
+        return $this->baseAccountRequest($token, $encryptionKey, $userId, $bankId, $personalNumber, $url);
+    }
+
+    public function getAccountTransactionsByID(string $token, string $encryptionKey, string $userId, string $bankId, string $personalNumber, string $id)
+    {
+        $url = "accounts/{$id}/transactions";
+        return $this->baseAccountRequest($token, $encryptionKey, $userId, $bankId, $personalNumber, $url);
+    }
+
+    // HELPER METHODS
+
+    private function baseAccountRequest(string $token, string $encryptionKey, string $userId, string $bankId, string $personalNumber, string $url)
+    {
+        $data = $this->getAccountRequestData($token, $encryptionKey, $userId, $bankId, $personalNumber);
+        try {
+            return $this->apiHelper->request($token, 'GET', $url, $data);
+        } catch (ConsentRequiredException $e) {
+            $url = $e->getConsentUrl();
+            return $this->getConsent($token, $url, $data);
+        }
+    }
+
+    private function getAccountRequestData(string $token, string $encryptionKey, string $userId, string $bankId, string $personalNumber)
+    {
+        $session = $this->getOrCreateSession($token, $userId, $bankId);
+        $data['headers'] = [
+            'x-device-id' => $userId,
+            'x-session-id' => $session->session_id,
+            'x-psu-ip-address' => request()->ip()
+        ];
+        if ($this->isIdentificationRequire($token, $bankId)) {
+            if (!$personalNumber) throw new JsonException(400, 'x-identification-id is required');
+            $data['headers']['x-psu-id'] = $this->encryptIdentifier($encryptionKey, $personalNumber);
+        }
+        return $data;
+    }
+
+    private function isIdentificationRequire(string $token, string $bankId)
+    {
+        $bank = $this->getBankByID($token, $bankId);
+        return $bank->personalIdentificationRequired;
+    }
+
+    private function encryptIdentifier(string $encryptionKey, string $personalNumber)
+    {
+        $data_to_encrypt = $personalNumber; // sandbox value for DNB - 31125461037
+        $cipher = "aes-128-gcm";
+        $raw_data = $encryptionKey; // value of the rawValue field from the encryption key
+        $key = base64_decode($raw_data);
+        if (in_array($cipher, openssl_get_cipher_methods())) {
+            $iv_len = openssl_cipher_iv_length($cipher);
+            $iv = openssl_random_pseudo_bytes($iv_len);
+            $tag = "";
+            $ciphertext = openssl_encrypt($data_to_encrypt, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
+            $with_iv = base64_encode($iv . $ciphertext . $tag);
+            return $with_iv;
+        }
+        return false;
+    }
+
+    private function isConsent($res)
+    {
+        if (is_array($res) && array_key_exists('href', $res)) {
+            return true;
+        }
+        return false;
+    }
 
     //---------//
     // Payment //
     //---------//
-
-    // ...
-
-    //--------//
-    // Helper //
-    //--------//
 
     // ...
 }

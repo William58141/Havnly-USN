@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Exceptions\Api\ConsentRequiredException;
 use App\Exceptions\Api\JsonException;
+use App\Exceptions\Api\PaymentAuthRequiredException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -28,18 +30,20 @@ class ApiHelper
     public function request(string $token, string $method, string $uri, array $data = [])
     {
         if ($token) $data['headers']['authorization'] = "Bearer {$token}";
-        $data['headers']['accept'] = 'application/json';
 
         try {
             $response = $this->httpClient->request($method, $uri, $data);
             return json_decode($response->getBody());
         } catch (RequestException $e) {
             $errorCode = $e->getResponse()->getStatusCode();
+
             if ($errorCode == 510) {
                 return $this->clientError($e);
-            } else if ($errorCode == 520) {
+            }
+            if ($errorCode == 520) {
                 return $this->neonomicsError($e);
-            } else if ($errorCode == 530) {
+            }
+            if ($errorCode == 530) {
                 return $this->bankError($e);
             }
 
@@ -49,70 +53,76 @@ class ApiHelper
         }
     }
 
-    // -------------- //
-    // Error handlers //
-    // -------------- //
-
     private function clientError($e)
     {
-        if ($e->hasResponse()) {
-            // [$errorCode, $message] = $this->getErrorData($e);
-            $body = $this->getErrorBody($e);
+        $body = $this->getErrorBody($e);
 
-            // consent
-            if ($body->errorCode === "1426") {
-                // $this->initConsent($body->links);
-                throw new JsonException(400, 'consent neede');
-            }
-            // authorize payment
-            if ($body->errorCode === "1428") {
-                //
-            }
-            // bad request
-            if ($body->errorCode < 2000) {
-                throw new JsonException(400, $body->message);
-            }
-            // forbidden
-            if ($body->errorCode === "2004") {
-                throw new JsonException(403, $body->message);
-            }
-            // invalid client id/secret
-            if ($body->errorCode === "2005") {
-                throw new JsonException(401, $body->message);
-            }
-            // $this->reAuthenticate();
-            throw new JsonException(500, $e);
+        // consent
+        if ($body->errorCode === "1426") {
+            throw new ConsentRequiredException($body);
         }
-        // unknown
-        throw new JsonException(410, 'We do not know what happened');
+        // authorize payment
+        if ($body->errorCode === "1428") {
+            throw new PaymentAuthRequiredException();
+        }
+        // bad request
+        if ($body->errorCode < 2000) {
+            throw new JsonException(400, $body->message);
+        }
+        // expired access token
+        if ($body->errorCode === "2002") {
+            // ! request new token with refresh token and resend request
+            throw new JsonException(500, 'expired access token, not done');
+        }
+        // forbidden
+        if ($body->errorCode === "2004") {
+            throw new JsonException(403, $body->message);
+        }
+        // invalid client id/secret
+        if ($body->errorCode === "2005") {
+            throw new JsonException(401, $body->message);
+        }
+        // expired refresh token
+        if ($body->errorCode === "2009") {
+            // ! create new tokens with client id/secret and resend request
+            throw new JsonException(500, 'expired refresh token, not done');
+        }
+        // generic
+        throw new JsonException(400, $body->message);
     }
 
     private function neonomicsError($e)
     {
-        throw new JsonException(500, 'Error from Neonomics');
+        $body = $this->getErrorBody($e);
+
+        // session problem or missing consent
+        if ($body->errorCode === "3010" || $body->errorCode === "3011") {
+            // ! recreate a new session and resent request
+            throw new JsonException(500, 'session problem or consent missing, not done');
+        }
+        // network error
+        if ($body->errorCode === "3901") {
+            throw new JsonException(408, 'Network error, please retry');
+        }
+        // default
+        throw new JsonException(503, 'Internal server error from Neonomics, please contact us');
     }
 
     private function bankError($e)
     {
+        $body = $this->getErrorBody($e);
+
+        // x-psu-id is required by the bank
+        if ($body->errorCode === "5001") {
+            throw new JsonException(400, 'x-identification-id is required');
+        }
         throw new JsonException(500, 'Error from bank');
     }
 
-    /**
-     * Get status and message from response
-     *
-     * @param RequestException $e
-     * @return object
-     */
     private function getErrorBody($e)
     {
         $body = json_decode($e->getResponse()->getBody());
-
         if (!is_object($body)) throw new JsonException(400);
-
-        // $errorCode = property_exists($body, 'errorCode') ? $body->errorCode : null;
-        // $message = property_exists($body, 'message') ? $body->message : null;
-
-        // return [$errorCode, $message];
         return $body;
     }
 }

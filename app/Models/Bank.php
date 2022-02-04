@@ -6,15 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Bank extends Model
 {
-    private string $countryCode;
-    private string $bankingGroupName;
-    private bool $personalIdentificationRequired;
-    private string $id;
-    private string $bankDisplayName;
-    private array $supportedServices;
-    private string $bic;
-    private string $bankOfficialName;
-    private string $status;
+    public string $countryCode;
+    public string $bankingGroupName;
+    public bool $personalIdentificationRequired;
+    public string $id;
+    public string $bankDisplayName;
+    public array $supportedServices;
+    public string $bic;
+    public string $bankOfficialName;
+    public string $status;
 
     public function __construct(string $countryCode, string $bankingGroupName, bool $personalIdentificationRequired, string $id, string $bankDisplayName, array $supportedServices, string $bic, string $bankOfficialName, $status)
     {
@@ -32,9 +32,10 @@ class Bank extends Model
     public function jsonSerialize()
     {
         return [
+            'id' => $this->id,
             'countryCode' => $this->countryCode,
             'name' => $this->bankDisplayName,
-            'id' => $this->id,
+            'requireIdentification' => $this->personalIdentificationRequired,
         ];
     }
 
@@ -43,8 +44,8 @@ class Bank extends Model
         if (is_array($json)) {
             $banks = [];
             foreach ($json as $bank) {
-                $bank = new Bank($bank->countryCode, $bank->bankingGroupName, $bank->personalIdentificationRequired, $bank->id, $bank->bankDisplayName, $bank->supportedServices, $bank->bic, $bank->bankOfficialName, $bank->status);
-                array_push($banks, $bank);
+                $newBank = new Bank($bank->countryCode, $bank->bankingGroupName, $bank->personalIdentificationRequired, $bank->id, $bank->bankDisplayName, $bank->supportedServices, $bank->bic, $bank->bankOfficialName, $bank->status);
+                array_push($banks, $newBank);
             }
             return $banks;
         }

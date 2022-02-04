@@ -22,6 +22,7 @@ class Handler extends ExceptionHandler
      * @var array<int, string>
      */
     protected $dontFlash = [
+        'client_secret',
         'current_password',
         'password',
         'password_confirmation',
@@ -38,16 +39,4 @@ class Handler extends ExceptionHandler
             //
         });
     }
-
-
-    // public function render($request, Throwable $exception)
-    // {
-    //     if ($exception instanceof ModelNotFoundException) {
-    //         return response()->json([
-    //             'error' => 'Entry for ' . str_replace('App\\', '', $exception->getModel()) . ' not found'
-    //         ], 404);
-    //     }
-
-    //     return parent::render($request, $exception);
-    // }
 }

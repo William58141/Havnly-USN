@@ -10,16 +10,29 @@ class BankController extends Controller
 {
     public function index(Request $request)
     {
-        $token = auth()->user()->access_token;
-        $params = $request->has('countryCode') ? 'countryCode=' . $request->query('countryCode') : ($request->has('name') ? 'name=' . $request->query('name') : (false));
-        $data = Neonomics::getBanks($token, $params);
-        return $this->responseJson($data);
+        $user = auth()->user();
+        $params = $this->getQueryParams($request);
+        $res = Neonomics::getBanks($user->access_token, $params);
+        return $this->responseJson($res);
     }
 
     public function show($id)
     {
-        $token = auth()->user()->access_token;
-        $data = Neonomics::getBankByID($token, $id);
-        return $this->responseJson($data);
+        $user = auth()->user();
+        $res = Neonomics::getBankByID($user->access_token, $id);
+        return $this->responseJson($res);
+    }
+
+    // HELPER METHODS
+
+    private function getQueryParams(Request $request)
+    {
+        $params = '';
+        if ($request->has('name')) {
+            $params = 'name=' . $request->query('name');
+        } else if ($request->has('countryCode')) {
+            $params = 'countryCode=' . $request->query('countryCode');
+        }
+        return $params;
     }
 }

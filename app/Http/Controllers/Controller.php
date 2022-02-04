@@ -11,9 +11,8 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    protected function responseJson($data)
+    protected function responseJson($data, $status = 200)
     {
-        $status = 200;
         $response['ok'] = true;
         $response['result'] = $data;
 

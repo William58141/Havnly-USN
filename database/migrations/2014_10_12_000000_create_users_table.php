@@ -18,6 +18,7 @@ class CreateUsersTable extends Migration
             $table->string('name');
             $table->string('client_id')->unique();
             $table->string('client_secret');
+            $table->string('encryption_key');
             $table->string('redirect_url');
             $table->string('access_token');
             $table->string('refresh_token');

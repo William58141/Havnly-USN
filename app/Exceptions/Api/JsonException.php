@@ -6,6 +6,9 @@ use Exception;
 
 class JsonException extends Exception
 {
+    protected $status;
+    protected $message;
+
     public function __construct(int $status, string $message = '')
     {
         $this->status = $status;

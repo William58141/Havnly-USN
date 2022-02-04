@@ -2,26 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Model;
 
-class User extends Authenticatable
+class Session extends Model
 {
-    use HasApiTokens;
-
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'client_id',
-        'client_secret',
-        'encryption_key',
-        'redirect_url',
-        'access_token',
-        'refresh_token',
+        'user_id',
+        'bank_id',
+        'session_id',
     ];
 
     /**
@@ -30,10 +23,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        'client_secret',
-        'encryption_key',
-        'access_token',
-        'refresh_token',
+        'session_id',
     ];
 
     /**
