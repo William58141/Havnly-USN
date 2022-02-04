@@ -2,7 +2,9 @@
 
 namespace App\Exceptions;
 
+use App\Exceptions\Api\JsonException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -24,6 +26,10 @@ class Handler extends ExceptionHandler
      */
     protected $dontFlash = [
         'client_secret',
+        'encryption_key',
+        'access_token',
+        'refresh_token',
+        'session_id',
         'current_password',
         'password',
         'password_confirmation',
@@ -36,8 +42,17 @@ class Handler extends ExceptionHandler
      */
     public function register()
     {
-        $this->reportable(function (Throwable $e) {
-            //
+        $this->renderable(function (Throwable $e, $request) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                // 404
+                if ($e instanceof NotFoundHttpException) {
+                    throw new JsonException(404);
+                }
+                // 405
+                if ($e instanceof MethodNotAllowedHttpException) {
+                    throw new JsonException(405);
+                }
+            }
         });
     }
 }

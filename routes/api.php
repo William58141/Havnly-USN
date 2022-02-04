@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Api\JsonException;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,13 +30,4 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // Route::get('/payment/{id}', [App\Http\Controllers\Api\PaymentController::class, 'show']);
 
     Route::get('/resources/{id}', [App\Http\Controllers\Api\ResourceController::class, 'show']);
-});
-
-
-Route::fallback(function () {
-    return response()->json([
-        'ok' => false,
-        'error' => 404,
-        'description' => 'Not found',
-    ], 404);
 });

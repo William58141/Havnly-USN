@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Exceptions\Api\JsonException;
 use App\Http\Controllers\Controller;
 use App\Models\Session;
+use Illuminate\Http\Request;
 
 class ResourceController extends Controller
 {
