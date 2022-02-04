@@ -24,15 +24,6 @@ class HelpController extends Controller
                         ],
                         'description' => 'Used to authenticate and get access token',
                     ],
-                    [
-                        'uri' => '/resources/{id}',
-                        'method' => 'GET',
-                        'headers' => [
-                            'authorization' => 'Bearer <token>'
-                        ],
-                        'description' => 'Get user ID related to the redirect_url resource ID',
-                    ],
-
                 ],
                 'Banks' => [
                     [
@@ -115,6 +106,14 @@ class HelpController extends Controller
                     ],
                 ],
                 'Other' => [
+                    [
+                        'uri' => '/resources/{id}',
+                        'method' => 'GET',
+                        'headers' => [
+                            'authorization' => 'Bearer <token>'
+                        ],
+                        'description' => 'Get user ID related to the redirect_url resource ID',
+                    ],
                     [
                         'uri' => '/help',
                         'method' => 'GET',

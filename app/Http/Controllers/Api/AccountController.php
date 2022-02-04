@@ -41,7 +41,7 @@ class AccountController extends Controller
         return $this->responseJson($accounts, $this->status);
     }
 
-    public function balances($id)
+    public function showBalances($id)
     {
         $user = auth()->user();
         $accounts = Neonomics::getAccountBalancesByID($user->access_token, $user->encryption_key, $this->userId, $this->bankId, $this->personalNumber, $id);
@@ -49,7 +49,7 @@ class AccountController extends Controller
         return $this->responseJson($accounts, $this->status);
     }
 
-    public function transactions($id)
+    public function showTransactions($id)
     {
         $user = auth()->user();
         $accounts = Neonomics::getAccountTransactionsByID($user->access_token, $user->encryption_key, $this->userId, $this->bankId, $this->personalNumber, $id);

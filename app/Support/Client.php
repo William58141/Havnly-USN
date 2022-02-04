@@ -49,8 +49,6 @@ class Client
         return $res;
     }
 
-    // HELPER METHODS
-
     private function getConsent(string $token, string $url, array $data)
     {
         $data['headers']['x-redirect-url'] = auth()->user()->redirect_url;
