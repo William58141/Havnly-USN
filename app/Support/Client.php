@@ -22,7 +22,7 @@ class Client
     // Auth //
     //------//
 
-    public function getTokens(string $clientId, string $clientSecret)
+    public function getNewTokens(string $clientId, string $clientSecret)
     {
         $data = [
             'form_params' => [
@@ -32,13 +32,22 @@ class Client
                 'client_secret' => $clientSecret,
             ]
         ];
-        $res = $this->apiHelper->request('', 'POST', env('NEONOMICS_AUTH_URL'), $data);
+        return $this->apiHelper->request('', 'POST', env('NEONOMICS_AUTH_URL'), $data);
+    }
+
+    public function updateTokensForUser()
+    {
+        $user = User::where('client_id', auth()->user()->client_id)->first();
+        $res = $this->getNewTokens($user->client_id, $user->client_secret);
+        $user->access_token = $res->access_token;
+        $user->refresh_token = $res->refresh_token;
+        $user->save();
         return $res;
     }
 
-    public function refreshTokens()
+    public function updateRefreshTokensForUser()
     {
-        $user = User::where('client_id', auth()->user()->client_id);
+        $user = User::where('client_id', auth()->user()->client_id)->first();
         $data = [
             'form_params' => [
                 'grant_type' => 'refresh_token',

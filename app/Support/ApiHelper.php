@@ -87,7 +87,7 @@ class ApiHelper
         }
         // invalid or expired access token
         if ($body->errorCode === "2001" || $body->errorCode === "2002") {
-            $res = Neonomics::refreshTokens();
+            $res = Neonomics::updateRefreshTokensForUser();
             if ($res) {
                 return $this->runLastRequest($res->access_token);
             }
@@ -103,8 +103,11 @@ class ApiHelper
         }
         // expired refresh token
         if ($body->errorCode === "2009") {
-            // ! create new tokens with client id/secret and resend request
-            throw new JsonException(500, 'Expired refresh token, not done');
+            $res = Neonomics::updateTokensForUser();
+            if ($res) {
+                return $this->runLastRequest($res->access_token);
+            }
+            throw new JsonException(410, 'Expired refresh token from Neonomics');
         }
         // generic
         throw new JsonException(400, $body->message);

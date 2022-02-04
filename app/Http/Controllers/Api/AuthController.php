@@ -38,7 +38,7 @@ class AuthController extends Controller
 
     private function createUser(Request $request)
     {
-        $tokens = Neonomics::getTokens($request->client_id, $request->client_secret);
+        $tokens = Neonomics::getNewTokens($request->client_id, $request->client_secret);
         $user = User::create([
             'name' => $request->name,
             'client_id' => $request->client_id,

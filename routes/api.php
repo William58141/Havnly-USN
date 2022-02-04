@@ -14,20 +14,20 @@ use Illuminate\Support\Facades\Route;
 |
  */
 
-Route::get('/help', [App\Http\Controllers\Api\HelpController::class, 'index']);
-Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'auth']);
+Route::get('/help', [App\Http\Controllers\Api\HelpController::class, 'index'])->name('help');
+Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'auth'])->name('auth');
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
-    Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index']);
-    Route::get('/banks/{id}', [App\Http\Controllers\Api\BankController::class, 'show']);
+    Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index'])->name('banks.index');
+    Route::get('/banks/{id}', [App\Http\Controllers\Api\BankController::class, 'show'])->name('banks.show');
 
-    Route::get('/accounts', [App\Http\Controllers\Api\AccountController::class, 'index']);
-    Route::get('/accounts/{id}', [App\Http\Controllers\Api\AccountController::class, 'show']);
-    Route::get('/accounts/{id}/balances', [App\Http\Controllers\Api\AccountController::class, 'showBalances']);
-    Route::get('/accounts/{id}/transactions', [App\Http\Controllers\Api\AccountController::class, 'showTransactions']);
+    Route::get('/accounts', [App\Http\Controllers\Api\AccountController::class, 'index'])->name('accounts.index');
+    Route::get('/accounts/{id}', [App\Http\Controllers\Api\AccountController::class, 'show'])->name('accounts.show');
+    Route::get('/accounts/{id}/balances', [App\Http\Controllers\Api\AccountController::class, 'showBalances'])->name('accounts.showBalances');
+    Route::get('/accounts/{id}/transactions', [App\Http\Controllers\Api\AccountController::class, 'showTransactions'])->name('accounts.showTransactions');
 
     // Route::post('/payment', [App\Http\Controllers\Api\PaymentController::class, 'index']);
     // Route::get('/payment/{id}', [App\Http\Controllers\Api\PaymentController::class, 'show']);
 
-    Route::get('/resources/{id}', [App\Http\Controllers\Api\ResourceController::class, 'show']);
+    Route::get('/resources/{id}', [App\Http\Controllers\Api\ResourceController::class, 'show'])->name('resources.show');
 });
