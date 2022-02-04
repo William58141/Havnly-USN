@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Exceptions\Api\ConsentRequiredException;
 use App\Exceptions\Api\JsonException;
 use App\Exceptions\Api\PaymentAuthRequiredException;
+use App\Support\Facades\Neonomics;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\GuzzleException;
@@ -12,10 +13,16 @@ use GuzzleHttp\Exception\GuzzleException;
 class ApiHelper
 {
     private $httpClient;
+    private $lastRequest;
 
     public function __construct(Client $httpClient)
     {
         $this->httpClient = $httpClient;
+    }
+
+    public function runLastRequest(string $token)
+    {
+        return $this->request($token, ...$this->lastRequest);
     }
 
     /**
@@ -35,6 +42,7 @@ class ApiHelper
             $response = $this->httpClient->request($method, $uri, $data);
             return json_decode($response->getBody());
         } catch (RequestException $e) {
+            $this->lastRequest = [$method, $uri, $data];
             $errorCode = $e->getResponse()->getStatusCode();
 
             if ($errorCode == 510) {
@@ -57,6 +65,14 @@ class ApiHelper
     {
         $body = $this->getErrorBody($e);
 
+        // catch other
+        if (!property_exists($body, 'errorCode')) {
+            if (property_exists($body, 'message')) {
+                throw new JsonException(400, $body->message);
+            }
+            throw new JsonException(400);
+        }
+
         // consent
         if ($body->errorCode === "1426") {
             throw new ConsentRequiredException($body);
@@ -69,10 +85,13 @@ class ApiHelper
         if ($body->errorCode < 2000) {
             throw new JsonException(400, $body->message);
         }
-        // expired access token
-        if ($body->errorCode === "2002") {
-            // ! request new token with refresh token and resend request
-            throw new JsonException(500, 'expired access token, not done');
+        // invalid or expired access token
+        if ($body->errorCode === "2001" || $body->errorCode === "2002") {
+            $res = Neonomics::refreshTokens();
+            if ($res) {
+                return $this->runLastRequest($res->access_token);
+            }
+            throw new JsonException(410, 'Expired access token for Neonomics');
         }
         // forbidden
         if ($body->errorCode === "2004") {
@@ -85,7 +104,7 @@ class ApiHelper
         // expired refresh token
         if ($body->errorCode === "2009") {
             // ! create new tokens with client id/secret and resend request
-            throw new JsonException(500, 'expired refresh token, not done');
+            throw new JsonException(500, 'Expired refresh token, not done');
         }
         // generic
         throw new JsonException(400, $body->message);
@@ -98,7 +117,7 @@ class ApiHelper
         // session problem or missing consent
         if ($body->errorCode === "3010" || $body->errorCode === "3011") {
             // ! recreate a new session and resent request
-            throw new JsonException(500, 'session problem or consent missing, not done');
+            throw new JsonException(500, 'Session problem or consent missing, not done');
         }
         // network error
         if ($body->errorCode === "3901") {

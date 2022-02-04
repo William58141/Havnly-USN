@@ -10,16 +10,14 @@ class BankController extends Controller
 {
     public function index(Request $request)
     {
-        $user = auth()->user();
         $params = $this->getQueryParams($request);
-        $res = Neonomics::getBanks($user->access_token, $params);
+        $res = Neonomics::getBanks($params);
         return $this->responseJson($res);
     }
 
     public function show($id)
     {
-        $user = auth()->user();
-        $res = Neonomics::getBankByID($user->access_token, $id);
+        $res = Neonomics::getBankByID($id);
         return $this->responseJson($res);
     }
 

@@ -27,32 +27,28 @@ class AccountController extends Controller
 
     public function index()
     {
-        $user = auth()->user();
-        $accounts = Neonomics::getAccounts($user->access_token, $user->encryption_key, $this->userId, $this->bankId, $this->personalNumber);
+        $accounts = Neonomics::getAccounts($this->userId, $this->bankId, $this->personalNumber);
         $this->isConsentMissing($accounts);
         return $this->responseJson($accounts, $this->status);
     }
 
     public function show($id)
     {
-        $user = auth()->user();
-        $accounts = Neonomics::getAccountByID($user->access_token, $user->encryption_key, $this->userId, $this->bankId, $this->personalNumber, $id);
+        $accounts = Neonomics::getAccountByID($this->userId, $this->bankId, $this->personalNumber, $id);
         $this->isConsentMissing($accounts);
         return $this->responseJson($accounts, $this->status);
     }
 
     public function showBalances($id)
     {
-        $user = auth()->user();
-        $accounts = Neonomics::getAccountBalancesByID($user->access_token, $user->encryption_key, $this->userId, $this->bankId, $this->personalNumber, $id);
+        $accounts = Neonomics::getAccountBalancesByID($this->userId, $this->bankId, $this->personalNumber, $id);
         $this->isConsentMissing($accounts);
         return $this->responseJson($accounts, $this->status);
     }
 
     public function showTransactions($id)
     {
-        $user = auth()->user();
-        $accounts = Neonomics::getAccountTransactionsByID($user->access_token, $user->encryption_key, $this->userId, $this->bankId, $this->personalNumber, $id);
+        $accounts = Neonomics::getAccountTransactionsByID($this->userId, $this->bankId, $this->personalNumber, $id);
         $this->isConsentMissing($accounts);
         return $this->responseJson($accounts, $this->status);
     }
