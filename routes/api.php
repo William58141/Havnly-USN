@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
  */
 
+Route::get('/help', [App\Http\Controllers\Api\HelpController::class, 'index']);
 Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'auth']);
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
@@ -27,15 +28,14 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     // Route::post('/payment', [App\Http\Controllers\Api\PaymentController::class, 'index']);
     // Route::get('/payment/{id}', [App\Http\Controllers\Api\PaymentController::class, 'show']);
 
-    // Route::get('/resources/{id}', [App\Http\Controllers\Api\ResourceController::class, 'show']);
+    Route::get('/resources/{id}', [App\Http\Controllers\Api\ResourceController::class, 'show']);
 });
 
-Route::get('/help', [App\Http\Controllers\Api\HelpController::class, 'index']);
 
-// Route::fallback(function () {
-//     return response()->json([
-//         'ok' => false,
-//         'error' => 404,
-//         'description' => 'Not found',
-//     ], 404);
-// });
+Route::fallback(function () {
+    return response()->json([
+        'ok' => false,
+        'error' => 404,
+        'description' => 'Not found',
+    ], 404);
+});
