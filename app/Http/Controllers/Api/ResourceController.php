@@ -11,7 +11,7 @@ class ResourceController extends Controller
 {
     public function show($id)
     {
-        $session = Session::where('session_id', $id)->first();
+        $session = Session::where('name', auth()->user()->name)->where('session_id', $id)->first();
         if (!$session) {
             throw new JsonException(400, 'Invalid resource ID');
         }

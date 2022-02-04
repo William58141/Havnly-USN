@@ -26,8 +26,8 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/accounts/{id}/balances', [App\Http\Controllers\Api\AccountController::class, 'showBalances'])->name('accounts.showBalances');
     Route::get('/accounts/{id}/transactions', [App\Http\Controllers\Api\AccountController::class, 'showTransactions'])->name('accounts.showTransactions');
 
-    // Route::post('/payment', [App\Http\Controllers\Api\PaymentController::class, 'index']);
-    // Route::get('/payment/{id}', [App\Http\Controllers\Api\PaymentController::class, 'show']);
+    Route::post('/payment', [App\Http\Controllers\Api\PaymentController::class, 'index'])->name('payment.index');
+    Route::get('/payment/{id}', [App\Http\Controllers\Api\PaymentController::class, 'show'])->name('payment.show');
 
     Route::get('/resources/{id}', [App\Http\Controllers\Api\ResourceController::class, 'show'])->name('resources.show');
 });

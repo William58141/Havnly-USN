@@ -112,7 +112,7 @@ class Client
     // Session //
     //---------//
 
-    private function createSession(string $userId, string $bankId)
+    public function createSession(string $userId, string $bankId)
     {
         $user = auth()->user();
         $data = [
@@ -121,6 +121,7 @@ class Client
         ];
         $res = $this->apiHelper->request($user->access_token, 'POST', 'session', $data);
         $session = Session::create([
+            'name' => $user->name,
             'user_id' => $userId,
             'bank_id' => $bankId,
             'session_id' => $res->sessionId,
@@ -130,7 +131,7 @@ class Client
 
     private function getOrCreateSession(string $userId, string $bankId)
     {
-        $session = Session::where('user_id', $userId)->where('bank_id', $bankId)->first();
+        $session = Session::where('name', auth()->user()->name)->where('user_id', $userId)->where('bank_id', $bankId)->first();
         if (!$session) {
             $session = $this->createSession($userId, $bankId);
         }
@@ -235,5 +236,13 @@ class Client
     // Payment //
     //---------//
 
-    // ...
+    public function startPayment()
+    {
+        //
+    }
+
+    public function getPaymentByID(string $id)
+    {
+        //
+    }
 }

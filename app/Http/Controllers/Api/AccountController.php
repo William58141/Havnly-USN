@@ -32,21 +32,21 @@ class AccountController extends Controller
         return $this->responseJson($accounts, $this->status);
     }
 
-    public function show($id)
+    public function show(string $id)
     {
         $accounts = Neonomics::getAccountByID($this->userId, $this->bankId, $this->personalNumber, $id);
         $this->isConsentMissing($accounts);
         return $this->responseJson($accounts, $this->status);
     }
 
-    public function showBalances($id)
+    public function showBalances(string $id)
     {
         $accounts = Neonomics::getAccountBalancesByID($this->userId, $this->bankId, $this->personalNumber, $id);
         $this->isConsentMissing($accounts);
         return $this->responseJson($accounts, $this->status);
     }
 
-    public function showTransactions($id)
+    public function showTransactions(string $id)
     {
         $accounts = Neonomics::getAccountTransactionsByID($this->userId, $this->bankId, $this->personalNumber, $id);
         $this->isConsentMissing($accounts);

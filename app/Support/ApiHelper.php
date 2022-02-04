@@ -20,7 +20,7 @@ class ApiHelper
         $this->httpClient = $httpClient;
     }
 
-    public function runLastRequest(string $token)
+    public function runLastRequest(string $token = '')
     {
         return $this->request($token, ...$this->lastRequest);
     }
@@ -65,14 +65,6 @@ class ApiHelper
     {
         $body = $this->getErrorBody($e);
 
-        // catch other
-        if (!property_exists($body, 'errorCode')) {
-            if (property_exists($body, 'message')) {
-                throw new JsonException(400, $body->message);
-            }
-            throw new JsonException(400);
-        }
-
         // consent
         if ($body->errorCode === "1426") {
             throw new ConsentRequiredException($body);
@@ -88,10 +80,7 @@ class ApiHelper
         // invalid or expired access token
         if ($body->errorCode === "2001" || $body->errorCode === "2002") {
             $res = Neonomics::updateRefreshTokensForUser();
-            if ($res) {
-                return $this->runLastRequest($res->access_token);
-            }
-            throw new JsonException(410, 'Expired access token for Neonomics');
+            return $this->runLastRequest($res->access_token);
         }
         // forbidden
         if ($body->errorCode === "2004") {
@@ -104,10 +93,7 @@ class ApiHelper
         // expired refresh token
         if ($body->errorCode === "2009") {
             $res = Neonomics::updateTokensForUser();
-            if ($res) {
-                return $this->runLastRequest($res->access_token);
-            }
-            throw new JsonException(410, 'Expired refresh token from Neonomics');
+            return $this->runLastRequest($res->access_token);
         }
         // generic
         throw new JsonException(400, $body->message);
@@ -117,11 +103,6 @@ class ApiHelper
     {
         $body = $this->getErrorBody($e);
 
-        // session problem or missing consent
-        if ($body->errorCode === "3010" || $body->errorCode === "3011") {
-            // ! recreate a new session and resent request
-            throw new JsonException(500, 'Session problem or consent missing, not done');
-        }
         // network error
         if ($body->errorCode === "3901") {
             throw new JsonException(408, 'Network error, please retry');
@@ -138,13 +119,22 @@ class ApiHelper
         if ($body->errorCode === "5001") {
             throw new JsonException(400, 'x-identification-id is required');
         }
-        throw new JsonException(500, 'Error from bank');
+        throw new JsonException(503, 'Internal error from selected ank');
     }
 
     private function getErrorBody($e)
     {
         $body = json_decode($e->getResponse()->getBody());
         if (!is_object($body)) throw new JsonException(400);
+
+        // catch unknown
+        if (!property_exists($body, 'errorCode')) {
+            if (property_exists($body, 'message')) {
+                throw new JsonException(503, $body->message);
+            }
+            throw new JsonException(503);
+        }
+
         return $body;
     }
 }

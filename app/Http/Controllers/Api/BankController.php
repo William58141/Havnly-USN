@@ -15,7 +15,7 @@ class BankController extends Controller
         return $this->responseJson($res);
     }
 
-    public function show($id)
+    public function show(string $id)
     {
         $res = Neonomics::getBankByID($id);
         return $this->responseJson($res);
