@@ -13,16 +13,7 @@ class AuthController extends Controller
     public function auth(Request $request)
     {
         $status = 200;
-        $request->validate([
-            'name' => ['required', 'string'],
-            'client_id' => ['required', 'string'],
-            'client_secret' => ['required', 'string'],
-            'encryption_key' => ['required', 'string'],
-            'redirect_url' => ['required', 'string'],
-        ]);
-        $user = User::where('client_id', $request->client_id)
-            ->where('client_secret', $request->client_secret)
-            ->first();
+        $user = $this->getUser($request);
 
         if (!$user) {
             $status = 201;
@@ -37,6 +28,23 @@ class AuthController extends Controller
         return $this->responseJson(['access_token' => $authToken], $status);
     }
 
+    // HELPER METHODS
+
+    private function getUser(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string'],
+            'client_id' => ['required', 'string'],
+            'client_secret' => ['required', 'string'],
+            'encryption_key' => ['required', 'string'],
+            'redirect_url' => ['required', 'string'],
+        ]);
+        $user = User::where('client_id', $request->client_id)
+            ->where('client_secret', $request->client_secret)
+            ->first();
+        return $user;
+    }
+
     private function createUser(Request $request)
     {
         $request->validate([
@@ -47,7 +55,7 @@ class AuthController extends Controller
             'redirect_url' => ['required', 'string'],
         ]);
 
-        $tokens = Neonomics::getNewTokens($request->client_id, $request->client_secret);
+        $tokens = Neonomics::getTokens($request->client_id, $request->client_secret);
         $user = User::create([
             'name' => $request->name,
             'client_id' => $request->client_id,
@@ -63,7 +71,11 @@ class AuthController extends Controller
 
     private function authenticate(User $user, Request $request)
     {
-        if ($user->name !== $request->name || $user->redirect_url !== $request->redirect_url || $user->encryption_key !== $request->encryption_key) {
+        if (
+            $user->name !== $request->name
+            || $user->redirect_url !== $request->redirect_url
+            || $user->encryption_key !== $request->encryption_key
+        ) {
             throw new JsonException(401, 'One or more values was invalid.');
         }
     }

@@ -2,29 +2,36 @@
 
 namespace App\Support;
 
-use App\Exceptions\api\ConsentRequiredException;
 use App\Exceptions\Api\JsonException;
-use App\Models\Account;
-use App\Models\Bank;
-use App\Models\Payment;
-use App\Models\Session;
+use App\Exceptions\Api\PaymentException;
 use App\Models\User;
+use App\Models\Bank;
+use App\Models\Session;
+use App\Models\Account;
+use App\Models\Payment;
 use stdClass;
 
 class Client
 {
     private $apiHelper;
+    private $user;
 
     public function __construct(ApiHelper $apiHelper)
     {
         $this->apiHelper = $apiHelper;
+        $this->user = auth()->user();
     }
 
     //------//
     // Auth //
     //------//
 
-    public function getNewTokens(string $clientId, string $clientSecret)
+    /**
+     * Get new tokens.
+     *
+     * @return object
+     */
+    public function getTokens(string $clientId, string $clientSecret)
     {
         $data = [
             'form_params' => [
@@ -37,43 +44,40 @@ class Client
         return $this->apiHelper->request('', 'POST', env('NEONOMICS_AUTH_URL'), $data);
     }
 
-    public function updateTokens(bool $useRefreshToken = false)
+    /**
+     * Get new tokens and update database.
+     *
+     * @return string new access token
+     */
+    public function updateTokens()
     {
-        $user = User::where('client_id', auth()->user()->client_id)->first();
-        if ($useRefreshToken) {
-            $data = [
-                'form_params' => [
-                    'grant_type' => 'refresh_token',
-                    'refresh_token' => $user->refresh_token,
-                    'client_id' => $user->client_id,
-                    'client_secret' => $user->client_secret,
-                ]
-            ];
-            $res = $this->apiHelper->request('', 'POST', env('NEONOMICS_AUTH_URL'), $data);
-        } else {
-            $res = $this->getNewTokens($user->client_id, $user->client_secret);
-        }
+        $user = User::where('client_id', $this->user->client_id)->first();
+        $res = $this->getTokens($user->client_id, $user->client_secret);
         $user->access_token = $res->access_token;
         $user->refresh_token = $res->refresh_token;
         $user->save();
-        return $res;
+        return $res->access_token;
     }
 
-    private function getConsent(string $url, array $data)
+    //-------------------------//
+    // Consent & Authorization //
+    //-------------------------//
+
+    /**
+     * Get approval URL for end user.
+     *
+     * @return array
+     */
+    public function getApproval(string $url, array $data)
     {
-        $user = auth()->user();
-        $data['headers']['x-redirect-url'] = $user->redirect_url;
-        $res = $this->apiHelper->request($user->access_token, 'GET', $url, $data);
-        foreach ($res->links as $link) {
-            if ($link->rel === 'consent' || $link->rel === 'Authorization URL') {
-                return [
-                    'type' => $link->type,
-                    'rel' => $link->rel,
-                    'href' => $link->href
-                ];
-            }
-        }
-        throw new JsonException(404, 'URL missing, please retry');
+        $data['headers']['x-redirect-url'] = $this->user->redirect_url;
+        $res = $this->apiHelper->request($this->user->access_token, 'GET', $url, $data);
+        $link = $res->links[0];
+        return [
+            'type' => $link->type,
+            'rel' => $link->rel,
+            'href' => $link->href,
+        ];
     }
 
     //------//
@@ -82,22 +86,19 @@ class Client
 
     public function getBanks(string $params)
     {
-        $user = auth()->user();
         $uri = 'banks';
         if ($params) $uri = $uri . '?' . $params;
         $data['headers']['x-device-id'] = 'neonomics';
-        $res = $this->apiHelper->request($user->access_token, 'GET', $uri, $data);
-        $banks = Bank::jsonDeserialize($res);
-        return $banks;
+        $res = $this->apiHelper->request($this->user->access_token, 'GET', $uri, $data);
+        return Bank::jsonDeserialize($res);
     }
 
     public function getBankByID(string $id)
     {
-        $user = auth()->user();
+        $url = "banks/{$id}";
         $data['headers']['x-device-id'] = 'neonomics';
-        $res = $this->apiHelper->request($user->access_token, 'GET', "banks/{$id}", $data);
-        $bank = Bank::jsonDeserialize($res);
-        return $bank;
+        $res = $this->apiHelper->request($this->user->access_token, 'GET', $url, $data);
+        return Bank::jsonDeserialize($res);
     }
 
     //---------//
@@ -106,7 +107,7 @@ class Client
 
     private function getOrCreateSession(string $userId, string $bankId)
     {
-        $session = Session::where('name', auth()->user()->name)
+        $session = Session::where('name', $this->user->name)
             ->where('user_id', $userId)
             ->where('bank_id', $bankId)
             ->first();
@@ -118,50 +119,18 @@ class Client
 
     private function createSession(string $userId, string $bankId)
     {
-        $user = auth()->user();
-        $res = $this->baseSessionRequest($userId, $bankId);
+        $data = [
+            'headers' => ['x-device-id' => $userId],
+            'json' => ['bankId' => $bankId]
+        ];
+        $res = $this->apiHelper->request($this->user->access_token, 'POST', 'session', $data);
         $session = Session::create([
-            'name' => $user->name,
+            'name' => $this->user->name,
             'user_id' => $userId,
             'bank_id' => $bankId,
             'session_id' => $res->sessionId,
         ]);
         return $session;
-    }
-
-    // private function deleteSession(string $userId, string $bankId) // ! not in use yet (auto delete session after completed transaction?)
-    // {
-    //     $user = auth()->user();
-    //     $session = Session::where('name', $user->name)
-    //         ->where('user_id', $userId)
-    //         ->where('bank_id', $bankId)
-    //         ->first();
-    //     $session->delete();
-    //     return $session;
-    // }
-
-    // private function updateSession(string $userId, string $bankId) // ! not needed?
-    // {
-    //     $user = auth()->user();
-    //     $res = $this->baseSessionRequest($userId, $bankId);
-    //     $session = Session::where('name', $user->name)
-    //         ->where('user_id', $userId)
-    //         ->where('bank_id', $bankId)
-    //         ->first();
-    //     $session->session_id = $res->sessionId;
-    //     $session->save();
-    //     return $session;
-    // }
-
-    private function baseSessionRequest(string $userId, string $bankId)
-    {
-        $user = auth()->user();
-        $data = [
-            'headers' => ['x-device-id' => $userId],
-            'json' => ['bankId' => $bankId]
-        ];
-        $res = $this->apiHelper->request($user->access_token, 'POST', 'session', $data);
-        return $res;
     }
 
     //---------//
@@ -171,57 +140,44 @@ class Client
     public function getAccounts(string $userId, string $bankId, string $personalNumber)
     {
         $url = 'accounts';
-        $res = $this->baseAccountRequest($userId, $bankId, $personalNumber, $url);
-        if ($this->needApproval($res)) return $res;
-        $account = Account::jsonDeserialize($res);
-        return $account;
+        $res = $this->baseAccountRequest($url, $userId, $bankId, $personalNumber);
+        return Account::jsonDeserialize($res);
     }
 
-    public function getAccountByID(string $userId, string $bankId, string $personalNumber, string $id)
+    public function getAccountByID(string $id, string $userId, string $bankId, string $personalNumber)
     {
         $url = "accounts/{$id}";
-        $res = $this->baseAccountRequest($userId, $bankId, $personalNumber, $url);
-        if ($this->needApproval($res)) return $res;
-        $account = Account::jsonDeserialize($res);
-        return $account;
+        $res = $this->baseAccountRequest($url, $userId, $bankId, $personalNumber);
+        return Account::jsonDeserialize($res);
     }
 
-    public function getAccountBalancesByID(string $userId, string $bankId, string $personalNumber, string $id)
+    public function getAccountBalancesByID(string $id, string $userId, string $bankId, string $personalNumber)
     {
         $url = "accounts/{$id}/balances";
-        return $this->baseAccountRequest($userId, $bankId, $personalNumber, $url);
+        return $this->baseAccountRequest($url, $userId, $bankId, $personalNumber);
     }
 
-    public function getAccountTransactionsByID(string $userId, string $bankId, string $personalNumber, string $id)
+    public function getAccountTransactionsByID(string $id, string $userId, string $bankId, string $personalNumber)
     {
         $url = "accounts/{$id}/transactions";
-        return $this->baseAccountRequest($userId, $bankId, $personalNumber, $url);
+        return $this->baseAccountRequest($url, $userId, $bankId, $personalNumber);
     }
 
-    private function baseAccountRequest(string $userId, string $bankId, string $personalNumber, string $url)
+    private function baseAccountRequest(string $url, string $userId, string $bankId, string $personalNumber)
     {
-        $user = auth()->user();
-        $data = $this->getAccountRequestData($userId, $bankId, $personalNumber, $user->encryption_key);
-        try {
-            return $this->apiHelper->request($user->access_token, 'GET', $url, $data);
-        } catch (ConsentRequiredException $e) {
-            $url = $e->getConsentUrl();
-            return $this->getConsent($url, $data);
-        }
+        $data = $this->getAccountRequestData($userId, $bankId, $personalNumber);
+        return $this->apiHelper->request($this->user->access_token, 'GET', $url, $data);
     }
 
-    private function getAccountRequestData(string $userId, string $bankId, string $personalNumber, string $encryptionKey)
+    private function getAccountRequestData(string $userId, string $bankId, string $personalNumber)
     {
         $session = $this->getOrCreateSession($userId, $bankId);
         $data['headers'] = [
             'x-device-id' => $userId,
             'x-session-id' => $session->session_id,
-            'x-psu-ip-address' => request()->ip()
+            'x-psu-ip-address' => request()->ip(),
+            'x-psu-id' => $this->encryptIdentifier($this->user->encryption_key, $personalNumber),
         ];
-        if ($this->isIdentificationRequire($bankId)) {
-            if (!$personalNumber) throw new JsonException(400, 'x-identification-id is required');
-            $data['headers']['x-psu-id'] = $this->encryptIdentifier($encryptionKey, $personalNumber);
-        }
         return $data;
     }
 
@@ -232,51 +188,23 @@ class Client
     public function newPayment(string $userId, string $bankId, string $personalNumber, object $json)
     {
         $url = 'payments/domestic-transfer';
-        $user = auth()->user();
-        $session = $this->getOrCreateSession($userId, $bankId);
-        $data = [
-            'headers' => [
-                'x-device-id' => $userId,
-                'x-session-id' => $session->session_id,
-                'x-redirect-url' => $user->redirect_url,
-                'x-psu-ip-address' => request()->ip(),
-            ],
-            'json' => [
-                'debtorAccount' => ['bban' => $json->debtor_account->bban],
-                'debtorName' => $json->debtor_account->owner,
-                'creditorAccount' => ['bban' => $json->creditor_account->bban],
-                'creditorName' => $json->creditor_account->owner,
-                'currency' => strtoupper($json->currency),
-                'instrumentedAmount' => $json->amount,
-                'endToEndIdentification' => $json->identification,
-                'remittanceInformationUnstructured' => property_exists($json, 'note') ? $json->note : '',
-                'paymentMetadata' => new stdClass(),
-            ],
-        ];
-        if ($this->isIdentificationRequire($bankId)) {
-            if (!$personalNumber) throw new JsonException(400, 'x-identification-id is required');
-            $data['headers']['x-psu-id'] = $this->encryptIdentifier($user->encryption_key, $personalNumber);
-        }
+        $data = $this->getPaymentRequestData($userId, $bankId, $personalNumber, $json);
         try {
-            $this->apiHelper->request($user->access_token, 'POST', $url, $data);
+            $this->apiHelper->request($this->user->access_token, 'POST', $url, $data);
             return [
                 'user_id' => $userId,
                 'action' => 'Payment authorized.',
             ];
-        } catch (ConsentRequiredException $e) {
-            Payment::create([
-                'name' => $user->name,
-                'session_id' => $session->session_id,
-                'payment_id' => $e->getMetaId(),
-            ]);
-            $url = $e->getConsentUrl();
-            return $this->getConsent($url, $data);
+        } catch (PaymentException $e) {
+            $sessionId = $e->getSessionId();
+            $paymentId = $e->getPaymentId();
+            $this->createPayment($sessionId, $paymentId);
+            throw new JsonException(401, 'Approval URL.', $e->getResponse());
         }
     }
 
     public function completePayment(string $id, string $userId, string $sessionId)
     {
-        $user = auth()->user();
         $url = "payments/domestic-transfer/{$id}/complete";
         $data = [
             'headers' => [
@@ -286,42 +214,67 @@ class Client
             ],
             'json' => [],
         ];
-        $this->apiHelper->request($user->access_token, 'POST', $url, $data);
+        $this->apiHelper->request($this->user->access_token, 'POST', $url, $data);
         return true;
+    }
+
+    private function getPaymentRequestData(string $userId, string $bankId, string $personalNumber, object $json)
+    {
+        $session = $this->getOrCreateSession($userId, $bankId);
+        $data = [
+            'headers' => [
+                'x-device-id' => $userId,
+                'x-session-id' => $session->session_id,
+                'x-redirect-url' => $this->user->redirect_url,
+                'x-psu-ip-address' => request()->ip(),
+                'x-psu-id' => $this->encryptIdentifier($this->user->encryption_key, $personalNumber),
+            ],
+            'json' => [
+                'debtorAccount' => ['bban' => $json->debtor_account->bban],
+                'creditorAccount' => ['bban' => $json->creditor_account->bban],
+                'debtorName' => $json->debtor_account->owner,
+                'creditorName' => $json->creditor_account->owner,
+                'currency' => strtoupper($json->currency),
+                'instrumentedAmount' => $json->amount,
+                'endToEndIdentification' => $json->identification,
+                'remittanceInformationUnstructured' => property_exists($json, 'note') ? $json->note : '',
+                'paymentMetadata' => new stdClass(), // => {}
+            ],
+        ];
+        return $data;
+    }
+
+    private function createPayment(string $sessionId, string $paymentId)
+    {
+        $payment = Payment::create([
+            'name' => $this->user->name,
+            'session_id' => $sessionId,
+            'payment_id' => $paymentId,
+        ]);
+        return $payment;
     }
 
     //---------//
     // Helpers //
     //---------//
 
-    private function isIdentificationRequire(string $bankId)
-    {
-        $bank = $this->getBankByID($bankId);
-        return $bank->personalIdentificationRequired;
-    }
-
     private function encryptIdentifier(string $encryptionKey, string $personalNumber)
     {
-        $data_to_encrypt = $personalNumber; // sandbox value for DNB - 31125461037
-        $cipher = "aes-128-gcm";
-        $raw_data = $encryptionKey; // value of the rawValue field from the encryption key
-        $key = base64_decode($raw_data);
-        if (in_array($cipher, openssl_get_cipher_methods())) {
-            $iv_len = openssl_cipher_iv_length($cipher);
-            $iv = openssl_random_pseudo_bytes($iv_len);
-            $tag = "";
-            $ciphertext = openssl_encrypt($data_to_encrypt, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
-            $with_iv = base64_encode($iv . $ciphertext . $tag);
-            return $with_iv;
+        if ($personalNumber) {
+            $data_to_encrypt = $personalNumber;
+            $cipher = "aes-128-gcm";
+            $raw_data = $encryptionKey;
+            $key = base64_decode($raw_data);
+            if (in_array($cipher, openssl_get_cipher_methods())) {
+                $iv_len = openssl_cipher_iv_length($cipher);
+                $iv = openssl_random_pseudo_bytes($iv_len);
+                $tag = "";
+                $ciphertext = openssl_encrypt($data_to_encrypt, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
+                $with_iv = base64_encode($iv . $ciphertext . $tag);
+                return $with_iv;
+            }
+            throw new JsonException(500, 'Invalid encryption cipher, please contact us.');
         }
-        throw new JsonException(500, 'Invalid encryption cipher, please contact us');
-    }
-
-    private function needApproval($res)
-    {
-        if (is_array($res) && array_key_exists('href', $res)) {
-            return true;
-        }
-        return false;
+        return '';
     }
 }

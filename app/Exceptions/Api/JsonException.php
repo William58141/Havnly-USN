@@ -6,32 +6,37 @@ use Exception;
 
 class JsonException extends Exception
 {
-    protected $status;
-    protected $message;
+    private $statusCode;
+    private $msg;
+    private $link;
 
-    public function __construct(int $status, string $message = null)
+    public function __construct(int $statusCode, $msg = null, $link = null)
     {
-        $this->status = $status;
-        $this->message = $message;
+        $this->statusCode = $statusCode;
+        $this->msg = $msg;
+        $this->link = $link;
     }
 
     public function render()
     {
-        $description = $this->getStatusDescription($this->status);
+        $description = $this->getStatusDescription($this->statusCode);
 
         $json = [
             'ok' => false,
-            'error' => $this->status,
+            'error' => $this->statusCode,
             'description' => $description,
         ];
-        if ($this->message !== null) {
-            $json['message'] = $this->message;
+        if ($this->msg !== null) {
+            $json['message'] = $this->msg;
+        }
+        if ($this->link !== null) {
+            $json['link'] = $this->link;
         }
 
-        return response()->json($json, $this->status);
+        return response()->json($json, $this->statusCode);
     }
 
-    private function getStatusDescription(int $status) {
+    private function getStatusDescription(int $code) {
         $httpStatuses = [
             200 => 'OK',
             201 => 'Created',
@@ -86,6 +91,6 @@ class JsonException extends Exception
             510 => 'Not Extended',
             511 => 'Network Authentication Required',
         ];
-        return $httpStatuses[$status];
+        return $httpStatuses[$code];
     }
 }

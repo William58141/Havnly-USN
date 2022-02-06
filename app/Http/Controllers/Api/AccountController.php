@@ -32,19 +32,19 @@ class AccountController extends Controller
 
     public function show(string $id)
     {
-        $res = Neonomics::getAccountByID($this->userId, $this->bankId, $this->personalNumber, $id);
+        $res = Neonomics::getAccountByID($id, $this->userId, $this->bankId, $this->personalNumber);
         return $this->responseJson($res);
     }
 
     public function showBalances(string $id)
     {
-        $res = Neonomics::getAccountBalancesByID($this->userId, $this->bankId, $this->personalNumber, $id);
+        $res = Neonomics::getAccountBalancesByID($id, $this->userId, $this->bankId, $this->personalNumber);
         return $this->responseJson($res);
     }
 
     public function showTransactions(string $id)
     {
-        $res = Neonomics::getAccountTransactionsByID($this->userId, $this->bankId, $this->personalNumber, $id);
+        $res = Neonomics::getAccountTransactionsByID($id, $this->userId, $this->bankId, $this->personalNumber);
         return $this->responseJson($res);
     }
 }

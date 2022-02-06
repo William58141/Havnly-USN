@@ -128,16 +128,7 @@ class HelpController extends Controller
                         'note' => 'OPTIONAL - Max 140 characters. (Exceptions: Swedbank - 10, Other banks in Sweden - 12, Banks in Denmark - 40)',
                     ],
                     'description' => 'Create a new domestic payment',
-                ],
-                [
-                    'uri' => '/payments/{id}',
-                    'method' => 'GET',
-                    'headers' => [
-                        'authorization' => 'Bearer <token>',
-                        'x-user-id' => 'Your applications user ID.',
-                    ],
-                    'description' => 'Get domestic payment details by it\'s ID.',
-                ],
+                ]
             ],
             'Other' => [
                 [

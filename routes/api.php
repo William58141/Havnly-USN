@@ -1,6 +1,5 @@
 <?php
 
-use App\Exceptions\Api\JsonException;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,6 +14,7 @@ use Illuminate\Support\Facades\Route;
  */
 
 Route::get('/help', [App\Http\Controllers\Api\HelpController::class, 'index'])->name('help');
+
 Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'auth'])->name('auth');
 
 Route::group(['middleware' => ['auth:sanctum']], function () {

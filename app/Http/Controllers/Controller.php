@@ -13,9 +13,9 @@ class Controller extends BaseController
 
     protected function responseJson($data, int $status = 200)
     {
-        $response['ok'] = true;
-        $response['result'] = $data;
+        $res['ok'] = true;
+        $res['result'] = $data;
 
-        return response()->json($response, $status);
+        return response()->json($res, $status);
     }
 }
