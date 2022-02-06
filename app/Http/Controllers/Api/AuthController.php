@@ -14,13 +14,15 @@ class AuthController extends Controller
     {
         $status = 200;
         $request->validate([
-            'name' => 'required|string',
-            'client_id' => 'required|string',
-            'client_secret' => 'required|string',
-            'encryption_key' => 'required|string',
-            'redirect_url' => 'required|string',
+            'name' => ['required', 'string'],
+            'client_id' => ['required', 'string'],
+            'client_secret' => ['required', 'string'],
+            'encryption_key' => ['required', 'string'],
+            'redirect_url' => ['required', 'string'],
         ]);
-        $user = User::where('client_id', $request->client_id)->where('client_secret', $request->client_secret)->first();
+        $user = User::where('client_id', $request->client_id)
+            ->where('client_secret', $request->client_secret)
+            ->first();
 
         if (!$user) {
             $status = 201;
@@ -38,11 +40,11 @@ class AuthController extends Controller
     private function createUser(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|unique:users,name',
-            'client_id' => 'required|string|unique:users,client_id',
-            'client_secret' => 'required|string',
-            'encryption_key' => 'required|string',
-            'redirect_url' => 'required|string',
+            'name' => ['required', 'string', 'unique:users,name'],
+            'client_id' => ['required', 'string', 'unique:users,client_id'],
+            'client_secret' => ['required', 'string'],
+            'encryption_key' => ['required', 'string'],
+            'redirect_url' => ['required', 'string'],
         ]);
 
         $tokens = Neonomics::getNewTokens($request->client_id, $request->client_secret);
@@ -62,7 +64,7 @@ class AuthController extends Controller
     private function authenticate(User $user, Request $request)
     {
         if ($user->name !== $request->name || $user->redirect_url !== $request->redirect_url || $user->encryption_key !== $request->encryption_key) {
-            throw new JsonException(401, 'One or more values was invalid');
+            throw new JsonException(401, 'One or more values was invalid.');
         }
     }
 }

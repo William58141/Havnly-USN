@@ -23,13 +23,14 @@ class Account extends Model
         $this->accountName = $accountName;
         $this->ownerName = $ownerName;
         $this->displayName = $displayName;
-        $this->balances = $balances; // might want to make a balance class with its own jsonSerialize() method?
+        $this->balances = $balances;
     }
 
     public function jsonSerialize()
     {
         return [
             'id' => $this->id,
+            'bban' => $this->bban,
             'owner' => $this->ownerName,
             'name' => $this->displayName,
             'balances' => $this->balances,

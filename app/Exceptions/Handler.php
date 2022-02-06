@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use App\Exceptions\Api\JsonException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
@@ -51,6 +52,10 @@ class Handler extends ExceptionHandler
                 // 405
                 if ($e instanceof MethodNotAllowedHttpException) {
                     throw new JsonException(405);
+                }
+                // 400 - default:422
+                if ($e instanceof ValidationException) {
+                    throw new JsonException(400, 'See /help for more info.');
                 }
             }
         });

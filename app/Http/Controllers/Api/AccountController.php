@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
-    private $status = 200;
     private $userId;
     private $bankId;
     private $personalNumber;
@@ -21,44 +20,31 @@ class AccountController extends Controller
         $this->personalNumber = $request->header('x-identification-id', '');
 
         if (!$this->userId || !$this->bankId) {
-            throw new JsonException(400, 'x-user-id and x-bank-id is required');
+            throw new JsonException(400, 'x-user-id and x-bank-id is required.');
         }
     }
 
     public function index()
     {
-        $accounts = Neonomics::getAccounts($this->userId, $this->bankId, $this->personalNumber);
-        $this->isConsentMissing($accounts);
-        return $this->responseJson($accounts, $this->status);
+        $res = Neonomics::getAccounts($this->userId, $this->bankId, $this->personalNumber);
+        return $this->responseJson($res);
     }
 
     public function show(string $id)
     {
-        $accounts = Neonomics::getAccountByID($this->userId, $this->bankId, $this->personalNumber, $id);
-        $this->isConsentMissing($accounts);
-        return $this->responseJson($accounts, $this->status);
+        $res = Neonomics::getAccountByID($this->userId, $this->bankId, $this->personalNumber, $id);
+        return $this->responseJson($res);
     }
 
     public function showBalances(string $id)
     {
-        $accounts = Neonomics::getAccountBalancesByID($this->userId, $this->bankId, $this->personalNumber, $id);
-        $this->isConsentMissing($accounts);
-        return $this->responseJson($accounts, $this->status);
+        $res = Neonomics::getAccountBalancesByID($this->userId, $this->bankId, $this->personalNumber, $id);
+        return $this->responseJson($res);
     }
 
     public function showTransactions(string $id)
     {
-        $accounts = Neonomics::getAccountTransactionsByID($this->userId, $this->bankId, $this->personalNumber, $id);
-        $this->isConsentMissing($accounts);
-        return $this->responseJson($accounts, $this->status);
-    }
-
-    // HELPER METHODS
-
-    private function isConsentMissing($res)
-    {
-        if (is_array($res) && array_key_exists('href', $res)) {
-            $this->status = 409;
-        }
+        $res = Neonomics::getAccountTransactionsByID($this->userId, $this->bankId, $this->personalNumber, $id);
+        return $this->responseJson($res);
     }
 }

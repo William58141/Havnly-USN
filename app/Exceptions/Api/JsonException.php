@@ -9,7 +9,7 @@ class JsonException extends Exception
     protected $status;
     protected $message;
 
-    public function __construct(int $status, string $message = '')
+    public function __construct(int $status, string $message = null)
     {
         $this->status = $status;
         $this->message = $message;
@@ -24,7 +24,7 @@ class JsonException extends Exception
             'error' => $this->status,
             'description' => $description,
         ];
-        if ($this->message) {
+        if ($this->message !== null) {
             $json['message'] = $this->message;
         }
 
