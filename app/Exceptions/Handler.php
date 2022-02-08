@@ -54,9 +54,9 @@ class Handler extends ExceptionHandler
                     throw new JsonException(405);
                 }
                 // 400 - default:422
-                if ($e instanceof ValidationException) {
-                    throw new JsonException(400, 'See /help for more info.');
-                }
+                // if ($e instanceof ValidationException) {
+                //     throw new JsonException(400, 'See /help for more info.');
+                // }
             }
         });
     }

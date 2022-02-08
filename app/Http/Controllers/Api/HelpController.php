@@ -11,8 +11,20 @@ class HelpController extends Controller
         return $this->responseJson([
             'Authentication' => [
                 [
-                    'uri' => '/auth',
+                    'uri' => '/token',
                     'method' => 'POST',
+                    'json' => [
+                        'name' => 'Your application name. (Required for first time user)',
+                        'client_id' => 'Client_id from Neonomics.',
+                        'client_secret' => 'Client_secret from Neonomics.',
+                        'encryption_key' => 'Value of the rawValue field from the Neonomics encryption key. (Required for first time user)',
+                        'redirect_url' => 'Callback after user consent and payment authentication. (Required for first time user)',
+                    ],
+                    'description' => 'Used to create new user or authenticate and get access token.',
+                ],
+                [
+                    'uri' => '/token',
+                    'method' => 'PUT',
                     'json' => [
                         'name' => 'Your application name.',
                         'client_id' => 'Client_id from Neonomics.',
@@ -20,7 +32,7 @@ class HelpController extends Controller
                         'encryption_key' => 'Value of the rawValue field from the Neonomics encryption key.',
                         'redirect_url' => 'Callback after user consent and payment authentication.',
                     ],
-                    'description' => 'Used to authenticate and get access token.',
+                    'description' => 'Used to update existing user.',
                 ],
             ],
             'Banks' => [

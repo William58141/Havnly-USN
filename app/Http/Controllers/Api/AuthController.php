@@ -10,22 +10,28 @@ use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    public function auth(Request $request)
-    {
-        $status = 200;
-        $user = $this->getUser($request);
+    private $status = 200;
 
-        if (!$user) {
-            $status = 201;
-            $user = $this->createUser($request);
-        } else {
-            $this->authenticate($user, $request);
-        }
+    public function index(Request $request)
+    {
+        $user = $this->getUser($request) ?? $this->createUser($request);
 
         $user->tokens()->delete();
         $authToken = $user->createToken($user->name)->plainTextToken;
 
-        return $this->responseJson(['access_token' => $authToken], $status);
+        return $this->responseJson(['access_token' => $authToken], $this->status);
+    }
+
+    public function update(Request $request)
+    {
+        $user = $this->getUser($request);
+
+        if (!$user) {
+            throw new JsonException(404, 'No user found.');
+        }
+
+        $this->updateUser($request, $user);
+        return $this->responseJson($user);
     }
 
     // HELPER METHODS
@@ -33,20 +39,20 @@ class AuthController extends Controller
     private function getUser(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string'],
             'client_id' => ['required', 'string'],
             'client_secret' => ['required', 'string'],
-            'encryption_key' => ['required', 'string'],
-            'redirect_url' => ['required', 'string'],
         ]);
+
         $user = User::where('client_id', $request->client_id)
             ->where('client_secret', $request->client_secret)
             ->first();
+
         return $user;
     }
 
     private function createUser(Request $request)
     {
+        $this->status = 201;
         $request->validate([
             'name' => ['required', 'string', 'unique:users,name'],
             'client_id' => ['required', 'string', 'unique:users,client_id'],
@@ -69,14 +75,20 @@ class AuthController extends Controller
         return $user;
     }
 
-    private function authenticate(User $user, Request $request)
+    private function updateUser(Request $request, User $user)
     {
-        if (
-            $user->name !== $request->name
-            || $user->redirect_url !== $request->redirect_url
-            || $user->encryption_key !== $request->encryption_key
-        ) {
-            throw new JsonException(401, 'One or more values was invalid.');
-        }
+        $request->validate([
+            'name' => ['required', 'string', 'unique:users,name'],
+            'client_id' => ['required', 'string'],
+            'client_secret' => ['required', 'string'],
+            'encryption_key' => ['required', 'string'],
+            'redirect_url' => ['required', 'string'],
+        ]);
+
+        $user->name = $request->name;
+        $user->encryption_key = $request->encryption_key;
+        $user->redirect_url = $request->redirect_url;
+
+        return $user->save();
     }
 }

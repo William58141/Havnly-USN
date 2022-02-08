@@ -13,9 +13,10 @@ use Illuminate\Support\Facades\Route;
 |
  */
 
-Route::get('/help', [App\Http\Controllers\Api\HelpController::class, 'index'])->name('help');
+Route::get('/help', [App\Http\Controllers\Api\HelpController::class, 'index'])->name('help.index');
 
-Route::post('/auth', [App\Http\Controllers\Api\AuthController::class, 'auth'])->name('auth');
+Route::post('/token', [App\Http\Controllers\Api\AuthController::class, 'index'])->name('token.index');
+Route::put('/token', [App\Http\Controllers\Api\AuthController::class, 'update'])->name('token.update');
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/banks', [App\Http\Controllers\Api\BankController::class, 'index'])->name('banks.index');
